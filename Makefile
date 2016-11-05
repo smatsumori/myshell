@@ -1,8 +1,8 @@
 CC = gcc
 
 TARGET = myshell
-SRCS = bufcache.o getblk.o buf_header.o
-OBJS = bufcache.o getblk.o buf_header.o
+SRCS = main.c
+OBJS = main.o 
 
 LDFLAGS = 
 CFLAGS = -g -O
@@ -18,7 +18,6 @@ $(TARGET): $(OBJS)
 
 .c.o:
 	$(CC) -c $(DFLAGS) $<
-
 
 clean:
 	$(RM) $(OBJS)
