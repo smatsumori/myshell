@@ -9,9 +9,21 @@ int main(int argc, char const* argv[])
 	int i;
 	char *av[MAXARG], buf[BUFSIZE];
 	const char *homepath = getenv("HOME");
+	const char *user = getenv("USER");
+	char *currentpath = getenv("PWD");
+	char *pwd[MAXARG];
+	int depth;
+	printf("msh\n");
+	/* Initialization */
+	set_pwd(currentpath, pwd, &depth);
+	printf("Depth: %d\n", depth);
 
 	while (1) {
-		printf("$");
+		printf("%s @ msh ~ ", user);
+		for (int i = 0; i <= depth; i++) {
+			printf("/%s", pwd[i]);
+		}
+		printf("\n$");
 		if (fgets(buf, sizeof(buf), stdin) == NULL) {
 			if (ferror(stdin)) {
 				perror("fgets");
@@ -31,12 +43,13 @@ int main(int argc, char const* argv[])
 		if (strcmp(av[0], "cd") == 0) {
 			int stat;
 			if (ac < 1) {
-				stat = chdir(homepath);
+				chdir(homepath);
 			} else {
-				stat = chdir(av[1]);
-			}
-			if (stat == -1) {
-				perror("Error_cd");
+				if(chdir(av[1]) != -1) {
+					set_pwd(av[1], pwd, &depth);
+				} else {
+					perror("Error_cd");
+				}
 			}
 			continue;
 		}

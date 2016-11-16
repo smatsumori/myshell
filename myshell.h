@@ -24,5 +24,5 @@
 
 /* prototypes */
 extern int parser(int *, char *[], char buf[]);
-
+extern void set_pwd(char *, char *[], int *);
 /* type struct */
