@@ -3,8 +3,6 @@
  */
 #include "myshell.h"
 
-
-
 int main(int argc, char const* argv[])
 {
 	int pid, ac ,stat;
@@ -18,12 +16,20 @@ int main(int argc, char const* argv[])
 				perror("fgets");
 				exit(1);
 			}
-			printf("\nExiting.../n");
+			printf("\nExiting...\n");
 			exit(0);
 		}
 		buf[strlen(buf) - 1] = '\0'; // safe sentinel
 		memset(av, 0, sizeof av);
-		parser(&ac, av, buf);
+
+		if (parser(&ac, av, buf) == 1) {
+			// If inputs nothing
+			break;
+		}
+
+		for (int i = 0; i < ac; i++) {
+			printf("%s\n", av[i]);
+		}
 	}
 	return 0;
 }

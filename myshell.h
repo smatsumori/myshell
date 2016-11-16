@@ -23,4 +23,6 @@
 #include <errno.h>
 
 /* prototypes */
-int parser(int *, char *[], char *buf[]);
+extern int parser(int *, char *[], char buf[]);
+
+/* type struct */
