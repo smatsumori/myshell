@@ -8,6 +8,7 @@ int main(int argc, char const* argv[])
 	int pid, ac ,stat;
 	int i;
 	char *av[MAXARG], buf[BUFSIZE];
+	const char *homepath = getenv("HOME");
 
 	while (1) {
 		printf("$");
@@ -24,12 +25,22 @@ int main(int argc, char const* argv[])
 
 		if (parser(&ac, av, buf) == 1) {
 			// If inputs nothing
-			break;
+			continue;
 		}
 
-		for (int i = 0; i < ac; i++) {
-			printf("%s\n", av[i]);
+		if (strcmp(av[0], "cd") == 0) {
+			int stat;
+			if (ac < 1) {
+				stat = chdir(homepath);
+			} else {
+				stat = chdir(av[1]);
+			}
+			if (stat == -1) {
+				perror("Error_cd");
+			}
+			continue;
 		}
+
 	}
 	return 0;
 }
