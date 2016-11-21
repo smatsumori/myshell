@@ -6,7 +6,9 @@
 int main(int argc, char const* argv[])
 {
 	int pid, ac ,stat, fd;
-	int redi = 0;
+	int pfd[2];
+	int redi = 0;	// Redirection Index
+	int pipi = 0;	// Pipe Idex
 	int i;
 	char *av[MAXARG], buf[BUFSIZE];
 	const char *homepath = getenv("HOME");
@@ -14,7 +16,8 @@ int main(int argc, char const* argv[])
 	char *currentpath = getenv("PWD");
 	char *pwd[MAXARG];
 	int depth;
-	printf("msh\n");
+	printf("msh ver 2.1\n");
+	printf("Executing on PID: %d\n\n", getpid());
 	/* Initialization */
 	set_pwd(currentpath, pwd, &depth);
 
@@ -107,6 +110,17 @@ int main(int argc, char const* argv[])
 				close(0);
 				dup(fd);
 				close(fd);
+			}
+		}
+
+		/* PIPELINE */
+		/* pfd[0] for stdin, pfd[1] for stdout */
+		if (pid == 0) {
+			if (pipi > 0) {
+				close(1);
+				dup(pfd[1]);
+				close(pfd[0]);
+				close(pdf[1]);
 			}
 		}
 
