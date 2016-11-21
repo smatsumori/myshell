@@ -26,4 +26,21 @@
 /* prototypes */
 extern int parser(int *, char *[], char buf[]);
 extern void set_pwd(char *, char *[], int *);
-/* type struct */
+
+/* macros */
+#define Close(FD) do{	\
+	int Close_fd = (FD);	\
+	if (close(Close_fd) == -1) {	\
+		perror("ERROR: file close");	\
+		fprintf(stderr, "%s:%d: close("#FD") %d\n",	\
+				__FILE__, __LINE__, Close_fd);	\
+	} \
+} while(0)	\
+
+#define Open(FILENAME, STAT, PMI, FD) do{	\
+	if ((FD = open(FILENAME, STAT, PMI)) == -1) {	\
+		perror("ERROR: file open");	\
+		fprintf(stderr, "%s:%d: open("#FILENAME") %s\n",	\
+				__FILE__, __LINE__, FILENAME);	\
+	} \
+} while(0)	\

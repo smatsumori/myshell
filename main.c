@@ -3,12 +3,15 @@
  */
 #include "myshell.h"
 
+static void exec_pipeline();
+
 int main(int argc, char const* argv[])
 {
 	int pid, ac ,stat, fd;
 	int pfd[2];
 	int redi = 0;	// Redirection Index
-	int pipi = 0;	// Pipe Idex
+	int pipc = 0;	// Pipe Counter
+	int pipi[10];	// Pipe Index
 	int i;
 	char *av[MAXARG], buf[BUFSIZE];
 	const char *homepath = getenv("HOME");
@@ -62,6 +65,7 @@ int main(int argc, char const* argv[])
 			fprintf(stderr, "Exitting...\n");
 			exit(0);
 		}
+	case -1:
 
 		/* Stage 2 */
 		/* folk process 
@@ -75,20 +79,28 @@ int main(int argc, char const* argv[])
 			fprintf(stderr, "process forked PID: %d\n", pid);
 		#endif 
 
-		/* REDIRECTION */
+		/* Check Redirection and Pipe */
 		/* redi:  index of redirect token */
-		if(pid == 0) {
-			for (int i = 0; i < ac; i++) {
-				if ((strcmp(av[i], ">")) == 0) {
-					av[i] = NULL;
-					redi = i;
-					break;
-				} else if ((strcmp(av[i], "<")) == 0) {
-					av[i] = NULL;
-					redi = -i;
-					break;
-				}	
+		/* pipc:  pipe counter */
+		/* pipi:  pipe index */
+		for (int i = 0; i < ac; i++) {
+			if ((strcmp(av[i], ">")) == 0) {
+				av[i] = NULL;
+				redi = i;
+				break;
+			} else if ((strcmp(av[i], "<")) == 0) {
+				av[i] = NULL;
+				redi = -i;
+				break;
+			} else if ((strcmp(av[i], "|")) == 0) {
+				av[i] = NULL;
+				pipi[pipc++] = i;
+				continue;
 			}
+		}
+
+		/* File Open for Redirection */
+		if(pid == 0) {
 			if (redi > 0) {
 				// OUTPUT REDIRECTION
 				if ((fd = open(av[redi + 1],
@@ -115,36 +127,57 @@ int main(int argc, char const* argv[])
 
 		/* PIPELINE */
 		/* pfd[0] for stdin, pfd[1] for stdout */
-		if (pid == 0) {
-			if (pipi > 0) {
+		if (pipc > 0) {
+			if (pid == 0) {
+				int proc_c = pipc; // number of processes to create
 				close(1);
 				dup(pfd[1]);
 				close(pfd[0]);
-				close(pdf[1]);
+				close(pfd[1]);
+				
+				
+			} else {
+				while (0 <= pipc) {
+					if (waitpid(pid, &stat, 0) < 0) {
+						perror("Error_waitpid");
+						exit(3);
+					}
+					pipc--;
+				}
+				printf("\n");
+				continue;
 			}
 		}
 
 		/* PROCESS EXECUTION */
 		/* Stage 3 */
-		if (pid == 0) {
-			/* IF child process */
-			#ifdef DEBUG
-				fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
-			#endif
-			if ((execvp(av[0], av)) == -1) {
-				perror("Error_execvp");	
-				exit(1);
-			}
-			continue;
-		} else {
-			/* Parent process */
-			/* Waiting for child process */
-			if (waitpid(pid, &stat, 0) < 0) {
-				perror("Error_waitpid");
-				exit(3);
-			}
-			printf("\n");
-			continue;
+		switch (pid) {
+			case -1:
+				break;
+				// ERROR
+
+			case 0:
+				/* Child process */
+				#ifdef DEBUG
+					fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
+				#endif
+				if ((execvp(av[0], av)) == -1) {
+					perror("Error_execvp");	
+					exit(1);
+				}
+				continue;
+				break;
+			
+			default:
+				/* Parent process */
+				/* Waiting for child process */
+				if (waitpid(pid, &stat, 0) < 0) {
+					perror("Error_waitpid");
+					exit(3);
+				}
+				printf("\n");
+				continue;
+
 		}
 	}
 	return 0;
