@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 
 /* prototypes */
 extern int parser(int *, char *[], char buf[]);

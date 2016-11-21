@@ -1,3 +1,6 @@
+# Test directory
+test_dir
+
 # Object files
 *.o
 *.ko

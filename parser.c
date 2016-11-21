@@ -37,8 +37,10 @@ void set_pwd(char *dir_path, char *pwd[], int *depth){
 
 	tp = strtok(dir_path, "/");
 	do {
+		#ifdef DEBUG_SET_PWD
 		printf("Depth: %d\n", *depth);
 		printf("tp %s\n", tp);
+		#endif
 
 		if (*tp == '.') {
 			char *tmp = tp;
