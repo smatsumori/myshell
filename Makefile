@@ -1,8 +1,8 @@
 CC = gcc
 
 TARGET = myshell.out
-SRCS = main.c parser.c
-OBJS = main.o parser.o
+SRCS = main.c parser.c cmdexe.c
+OBJS = main.o parser.o cmdexe.o
 
 LDFLAGS = 
 CFLAGS = -g -O
