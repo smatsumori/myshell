@@ -1,31 +1,29 @@
 #include "myshell.h"
 const char *delim = " \t\n&><|";	// Deliminator
 
+static void redirect(int oldfd, int newfd) {
+	/* newfd will point at oldfd */
+	if (oldfd != newfd) {
+		if (dup2(oldfd, newfd)) 
+			Close(oldfd);
+		else
+			perror("dup2");
+	}
+	return;
+}
+
 int iscop(char c) {
 	return ((isalnum(c) || ispunct(c)) 
 		&& (c != '&') && (c != '>') && (c != '<') && (c != '|'));
 }
 
-int lexer() {
-	int ch;
-	while ((ch = getchar()) != EOF) {
-		if (ch <= ' ')	continue;	// tab space [\n|\t]
-		if (ch == '&')	return TKN_BG;
-		if (ch == '\n') return TKN_EOL;
-		if (ch == '>')  return TKN_REDIR_OUT;
-		if (ch == '<')	return TKN_REDIR_IN;
-		if (ch == '|')	return TKN_PIPE;
-
-		/* COP: Command or Parameter */
-		if (isalnum(ch)) {
-			while (iscop(ch = getchar()));
-			ungetc(ch, stdin);
-			return TKN_COP;
-		}
-	}
-	return EOF;
+void tokenizer(char *rawinput, char **cmds[MAXARG], int tkn[MAXARG]) {
+	/* ls -al | grep "something" | more */
+	char *ptr = rawinput;
+	int cmdno = 0;
 }
 
+/*
 void show_tkno(int tkno) {
 	switch (tkno) {
 		case TKN_COP:
@@ -46,6 +44,7 @@ void show_tkno(int tkno) {
 	}
 	return;
 }
+*/
 
 int parser(int *ac, char *av[MAXARG], char buf[BUFSIZE]) {
 	/* sets ac av by parsing raw input buf */

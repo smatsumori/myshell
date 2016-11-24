@@ -3,16 +3,25 @@
  */
 #include "myshell.h"
 
-static void exec_pipeline(char *argv[MAXARG], int pfd[], int pipc, int pipi[]);
-
 
 #ifdef DEBUG_LEX
 int main(int argc, char const* argv[])
 {
 	int tkno;
+	int pid, ac, stat, fd;
+//	int tkn[MAXARG];
+	char *av[MAXARG], buf[BUFSIZE];
+	// char **cmds[MAXARG];	// {cmd0, cmd1, cmd3}
+	/* echo hogehoge | grep hoge | wc */
+	char *cmd1[] = {"echo", "hogehoge", NULL};
+	char *cmd2[] = {"grep", "hoge", NULL};
+	char *cmd3[] = {"wc", NULL};
+	char **cmds[] = {cmd1, cmd2, cmd3, NULL};
+	int tkn[] = {TKN_COM, TKN_PIPE, TKN_COM, TKN_PIPE, TKN_COM, TKN_EOL};
+
 	while (1) {
-		
-		show_tkno(tkno);
+		printf("\n$");
+		exec_pipeline((char ***)cmds, 0, STDIN_FILENO);
 	}
 	return 0;
 }
@@ -199,14 +208,3 @@ int main(int argc, char const* argv[])
 }
 
 #endif
-
-static void exec_pipeline(char *argv[MAXARG], int pfd[], int pipc, int pipi[]){
-
-	if (pipc < 0) {
-		pipe(pfd);
-		Close(STDOUT_FILENO);
-		dup(pfd[STDOUT_FILENO]);
-		pipc = -pipc;
-		pipc++;
-	}	return;	
-}

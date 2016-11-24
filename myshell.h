@@ -6,12 +6,16 @@
 #define BUFSIZE 1024
 #define VER "2.2"
 
+/* FD status */
+#define FD_READ 0
+#define FD_WRITE 1
+
 /* token status */
-#define TKN_COP 1	// Command or Parameter
+#define TKN_COM 1	// Command
 #define TKN_REDIR_IN 2
 #define TKN_REDIR_OUT 3
 #define TKN_PIPE 4
-#define TKN_BG 5
+#define TKN_COM_BG 5
 #define TKN_EOL -1
 #define TKN_EOF -2
 
@@ -27,7 +31,13 @@
 #include <ctype.h>
 
 /* prototypes */
-extern int lexer();
+/* cmdexe.c */
+static void exec_pipeline(char ***, size_t, int);
+static void redirect(int, int);
+static void cmd_redirect(int, int, char *);
+
+/* parser.c */
+extern int lexer(char buf[]);
 extern int parser(int *, char *[], char buf[]);
 extern void set_pwd(char *, char *[], int *);
 extern void show_tkno(int);
@@ -49,3 +59,9 @@ extern void show_tkno(int);
 				__FILE__, __LINE__, FILENAME);	\
 	} \
 } while(0)	\
+
+/* functions */
+static void report_error_and_exit(const char* msg, int rpid) {
+	perror(msg);
+	return;
+}
