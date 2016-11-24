@@ -3,8 +3,24 @@
  */
 #include "myshell.h"
 
-static void exec_pipeline();
+static void exec_pipeline(char *argv[MAXARG], int pfd[], int pipc, int pipi[]);
 
+
+#ifdef DEBUG_LEX
+int main(int argc, char const* argv[])
+{
+	int tkno;
+	while (1) {
+		
+		show_tkno(tkno);
+	}
+	return 0;
+}
+#endif
+
+
+
+#ifdef INTERP
 int main(int argc, char const* argv[])
 {
 	int pid, ac ,stat, fd;
@@ -19,7 +35,7 @@ int main(int argc, char const* argv[])
 	char *currentpath = getenv("PWD");
 	char *pwd[MAXARG];
 	int depth;
-	printf("msh ver 2.1\n");
+	printf("msh ver %s\n", VER);
 	printf("Executing on PID: %d\n\n", getpid());
 	/* Initialization */
 	set_pwd(currentpath, pwd, &depth);
@@ -40,6 +56,7 @@ int main(int argc, char const* argv[])
 		}
 		buf[strlen(buf) - 1] = '\0'; // safe sentinel
 		memset(av, 0, sizeof av);
+		redi = 0;	// initialize
 		
 		/* PARSING */
 		if (parser(&ac, av, buf) == 1) {
@@ -65,7 +82,6 @@ int main(int argc, char const* argv[])
 			fprintf(stderr, "Exitting...\n");
 			exit(0);
 		}
-	case -1:
 
 		/* Stage 2 */
 		/* folk process 
@@ -99,34 +115,10 @@ int main(int argc, char const* argv[])
 			}
 		}
 
-		/* File Open for Redirection */
-		if(pid == 0) {
-			if (redi > 0) {
-				// OUTPUT REDIRECTION
-				if ((fd = open(av[redi + 1],
-							   	O_WRONLY|O_CREAT|O_TRUNC, 0644))
-						< 0) {
-					perror("Error: file open");
-				}
-				close(1);	// Close stdout
-				dup(fd);	// dup() returns 1(stdout)
-				close(fd);
-			}
-			if (redi < 0) {
-				// INPUT REDIRECTION
-				if ((fd = open(av[(-redi) + 1],
-							O_RDONLY, 0644))
-					   < 0)	{
-					perror("Error: file open");
-				}
-				close(0);
-				dup(fd);
-				close(fd);
-			}
-		}
 
 		/* PIPELINE */
 		/* pfd[0] for stdin, pfd[1] for stdout */
+		/*
 		if (pipc > 0) {
 			if (pid == 0) {
 				int proc_c = pipc; // number of processes to create
@@ -148,19 +140,43 @@ int main(int argc, char const* argv[])
 				continue;
 			}
 		}
+		*/
 
-		/* PROCESS EXECUTION */
+		if (pipc > 0) {
+			pipe(pfd);
+			exec_pipeline(av, pfd, pipc, pipi);
+			continue;	// Skip the following
+		}
+
+		/* NORMAL PROCESS EXECUTION */
 		/* Stage 3 */
 		switch (pid) {
 			case -1:
+				/* Cannot fork */
+				perror("ERROR: fork");
 				break;
 				// ERROR
-
 			case 0:
 				/* Child process */
+				/* File Open for Redirection */
+				if (redi > 0) {
+					// OUTPUT REDIRECTION
+					Open(av[redi + 1], O_WRONLY|O_CREAT|O_TRUNC, 0644, fd);
+					Close(STDOUT_FILENO);	// Close stdout
+					dup(fd);	// dup() returns 1(stdout)
+					Close(fd);
+				}
+				if (redi < 0) {
+					// INPUT REDIRECTION
+					Open(av[(-redi) + 1], O_RDONLY, 0644, fd);
+					Close(STDIN_FILENO);
+					dup(fd);
+					close(fd);
+			}
 				#ifdef DEBUG
 					fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
 				#endif
+				/* EXECUTION */
 				if ((execvp(av[0], av)) == -1) {
 					perror("Error_execvp");	
 					exit(1);
@@ -177,8 +193,20 @@ int main(int argc, char const* argv[])
 				}
 				printf("\n");
 				continue;
-
 		}
 	}
 	return 0;
+}
+
+#endif
+
+static void exec_pipeline(char *argv[MAXARG], int pfd[], int pipc, int pipi[]){
+
+	if (pipc < 0) {
+		pipe(pfd);
+		Close(STDOUT_FILENO);
+		dup(pfd[STDOUT_FILENO]);
+		pipc = -pipc;
+		pipc++;
+	}	return;	
 }

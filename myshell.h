@@ -1,11 +1,13 @@
 /* defines */
 #define DEBUG
+#define DEBUG_LEX
 #define MAXINPUT
 #define MAXARG 80
 #define BUFSIZE 1024
+#define VER "2.2"
 
 /* token status */
-#define TKN_NORMAL 1
+#define TKN_COP 1	// Command or Parameter
 #define TKN_REDIR_IN 2
 #define TKN_REDIR_OUT 3
 #define TKN_PIPE 4
@@ -22,10 +24,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 /* prototypes */
+extern int lexer();
 extern int parser(int *, char *[], char buf[]);
 extern void set_pwd(char *, char *[], int *);
+extern void show_tkno(int);
 
 /* macros */
 #define Close(FD) do{	\

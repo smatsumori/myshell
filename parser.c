@@ -1,6 +1,51 @@
 #include "myshell.h"
-const char *delim = " \t\n";	// Deliminator
+const char *delim = " \t\n&><|";	// Deliminator
 
+int iscop(char c) {
+	return ((isalnum(c) || ispunct(c)) 
+		&& (c != '&') && (c != '>') && (c != '<') && (c != '|'));
+}
+
+int lexer() {
+	int ch;
+	while ((ch = getchar()) != EOF) {
+		if (ch <= ' ')	continue;	// tab space [\n|\t]
+		if (ch == '&')	return TKN_BG;
+		if (ch == '\n') return TKN_EOL;
+		if (ch == '>')  return TKN_REDIR_OUT;
+		if (ch == '<')	return TKN_REDIR_IN;
+		if (ch == '|')	return TKN_PIPE;
+
+		/* COP: Command or Parameter */
+		if (isalnum(ch)) {
+			while (iscop(ch = getchar()));
+			ungetc(ch, stdin);
+			return TKN_COP;
+		}
+	}
+	return EOF;
+}
+
+void show_tkno(int tkno) {
+	switch (tkno) {
+		case TKN_COP:
+			fprintf(stderr, "[COP]");
+			break;
+		case TKN_REDIR_IN:
+			fprintf(stderr, "[REDIR_IN]");
+			break;
+		case TKN_REDIR_OUT:
+			fprintf(stderr, "[REDIR_OUT]");
+			break;
+		case TKN_PIPE:
+			fprintf(stderr, "[PIPE]");
+			break;
+		case TKN_EOL:
+			fprintf(stderr, "[EOL]\n");
+			break;
+	}
+	return;
+}
 
 int parser(int *ac, char *av[MAXARG], char buf[BUFSIZE]) {
 	/* sets ac av by parsing raw input buf */
