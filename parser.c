@@ -18,6 +18,11 @@ int iscop(char c) {
 	return (isalnum(c) || (c == '.'));
 }
 
+int parse(char **tokenseq, int *token_id, char ***cmds, int cmd_id) {
+	int cmdi = 0;
+
+	return cmdi;
+}
 
 int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
 	/* sets: tokenseq, token_id from rawinput */
@@ -30,11 +35,11 @@ int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
 			*sp= '\0';
 			sp++;
 		}
-		if (isalnum(*sp)) {	// COMMAND OR PARAM
+		if (iscop(*sp)) {	// COMMAND OR PARAM
 			tokenseq[tki] = sp++;
 			token_id[tki] = TKN_COP;
 			tki++;
-			while (isalnum(*sp)) sp++;
+			while (iscop(*sp)) sp++;
 			continue;
 		}
 		switch (*sp) {
@@ -62,9 +67,10 @@ int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
 					continue;
 		}
 	}
+	tokenseq[tki] = NULL;
+	token_id[tki] = TKN_EOL;
 	*sp = '\0';
-	// remove BL
-	return tki;
+	return tki + 1;
 }
 
 #ifdef MERGE
