@@ -11,13 +11,16 @@
 #define FD_WRITE 1
 
 /* token status */
-#define TKN_COM 1	// Command
+#define TKN_COP 1
 #define TKN_REDIR_IN 2
 #define TKN_REDIR_OUT 3
 #define TKN_PIPE 4
 #define TKN_COM_BG 5
 #define TKN_EOL -1
 #define TKN_EOF -2
+
+/* error status */
+#define ERR_MALLOC 4
 
 /* includes */
 #include <stdio.h>
@@ -32,15 +35,16 @@
 
 /* prototypes */
 /* cmdexe.c */
-static void exec_pipeline(char ***, size_t, int);
-static void redirect(int, int);
-static void cmd_redirect(int, int, char *);
+extern void exec_pipeline(char ***, size_t, int);
+extern void redirect(int, int);
+extern void cmd_redirect(int, int, char *);
 
 /* parser.c */
 extern int lexer(char buf[]);
 extern int parser(int *, char *[], char buf[]);
 extern void set_pwd(char *, char *[], int *);
 extern void show_tkno(int);
+extern int tokenize(char *, char **, int *);
 
 /* macros */
 #define Close(FD) do{	\
@@ -59,6 +63,15 @@ extern void show_tkno(int);
 				__FILE__, __LINE__, FILENAME);	\
 	} \
 } while(0)	\
+
+#define Malloc(PTR, TYPE, SIZE, ERRORNO) do{	\
+	if ((PTR = (TYPE *) malloc(sizeof(TYPE) * SIZE)) == NULL) {	\
+		fprintf(stderr, "Cannot allocate %d byte memory space.\n", \
+				sizeof(TYPE) * (SIZE)); \
+		exit(ERRORNO); \
+	} \
+} while (0) \
+
 
 /* functions */
 static void report_error_and_exit(const char* msg, int rpid) {

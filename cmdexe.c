@@ -1,11 +1,11 @@
 #include "myshell.h"
 
-static void cmd_redirect(int oldfd, int newfd, char *filename){
+void cmd_redirect(int oldfd, int newfd, char *filename){
 	return;
 }
 
 // newfd -> oldfd
-static void redirect(int oldfd, int newfd) {
+void redirect(int oldfd, int newfd) {
 	if (oldfd != newfd) {
 		if (dup2(oldfd, newfd) != -1)
 			Close(oldfd);
@@ -14,8 +14,8 @@ static void redirect(int oldfd, int newfd) {
 	}
 }
 
-static void exec_pipeline(char **cmds[], size_t pos, int in_fd) {
-	/* cmds: commands
+void exec_pipeline(char **cmds[], size_t pos, int in_fd) {
+	/* cmds: commands 
 	 * pos: position
 	 * ifd: input file descriptor */
 	if (cmds[pos + 1] == NULL) {	/* IF: last command */
@@ -39,12 +39,13 @@ static void exec_pipeline(char **cmds[], size_t pos, int in_fd) {
 			default:	/* PARENT */
 				Close(pfd[FD_WRITE]);
 				Close(in_fd);
+				// waitpid
 				exec_pipeline(cmds, pos + 1, pfd[FD_READ]);
 				break;
 		}
 	}
 }
 
-static void exec_cmd(char **cmds[]) {
+void exec_cmd(char **cmds[]) {
 	return;
 }

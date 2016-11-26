@@ -1,50 +1,90 @@
 #include "myshell.h"
-const char *delim = " \t\n&><|";	// Deliminator
 
-static void redirect(int oldfd, int newfd) {
-	/* newfd will point at oldfd */
-	if (oldfd != newfd) {
-		if (dup2(oldfd, newfd)) 
-			Close(oldfd);
-		else
-			perror("dup2");
-	}
-	return;
+#ifdef MERGE
+int setcmds(char *tp, char **cmds[MAXARG], int cmdno) {
+	/* RETURN: TOKENSTATUS */
+	/* *tp: ls -al > someghing.txt */
+	int tkno;
+	char *ptr = tp;
+	char **cmdptr;
+	Malloc(cmdptr, char **, MAXARG, ERR_MALLOC);
+	cmds[cmdno] = cmdptr;
+	return tkno;
 }
+#endif
 
 int iscop(char c) {
-	return ((isalnum(c) || ispunct(c)) 
-		&& (c != '&') && (c != '>') && (c != '<') && (c != '|'));
+	// todo: add more token later
+	return (isalnum(c) || (c == '.'));
 }
+
+
+int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
+	/* sets: tokenseq, token_id from rawinput */
+	/* rawinput: "ls -al | grep "something" | wc > hoge.txt" */
+	/* RV: number of tokens */
+	char *sp = rawinput;	// search pointer
+	char tki = 0;
+	while (*sp != '\n') {
+		while (isblank(*sp)) {
+			*sp= '\0';
+			sp++;
+		}
+		if (isalnum(*sp)) {	// COMMAND OR PARAM
+			tokenseq[tki] = sp++;
+			token_id[tki] = TKN_COP;
+			tki++;
+			while (isalnum(*sp)) sp++;
+			continue;
+		}
+		switch (*sp) {
+			case '>':
+					fprintf(stderr, "redirec\n");
+					*sp = '\0';
+					tokenseq[tki] = ">";
+					token_id[tki] = TKN_REDIR_OUT;
+					tki++;
+					sp++;
+					continue;
+			case  '<':
+					*sp = '\0';
+					tokenseq[tki] = "<";
+					token_id[tki] = TKN_REDIR_IN;
+					tki++;
+					sp++;
+					continue;
+			case '|':
+					*sp = '\0';
+					tokenseq[tki] = "|";
+					token_id[tki] = TKN_PIPE;
+					tki++;
+					sp++;
+					continue;
+		}
+	}
+	*sp = '\0';
+	// remove BL
+	return tki;
+}
+
+#ifdef MERGE
 
 void tokenizer(char *rawinput, char **cmds[MAXARG], int tkn[MAXARG]) {
 	/* ls -al | grep "something" | more */
+	const char *delim_p = "|";	// Deliminator
 	char *ptr = rawinput;
 	int cmdno = 0;
-}
 
-/*
-void show_tkno(int tkno) {
-	switch (tkno) {
-		case TKN_COP:
-			fprintf(stderr, "[COP]");
-			break;
-		case TKN_REDIR_IN:
-			fprintf(stderr, "[REDIR_IN]");
-			break;
-		case TKN_REDIR_OUT:
-			fprintf(stderr, "[REDIR_OUT]");
-			break;
-		case TKN_PIPE:
-			fprintf(stderr, "[PIPE]");
-			break;
-		case TKN_EOL:
-			fprintf(stderr, "[EOL]\n");
-			break;
+	if ((tp = strtok(buf, delim_p)) == NULL) {
+		tkn[0] = setcmds(tp, (char ***)cmds);
+		return 1;
 	}
-	return;
+	tkn[0] = setcmds(tp, (char ***)cmds);
+	while ((tp = strtok(NULL, delim)) != NULL) {
+		tkn[cmno] = setcmds(tp, (char ***)cmds, cmdno);
+	}
+	return 0;
 }
-*/
 
 int parser(int *ac, char *av[MAXARG], char buf[BUFSIZE]) {
 	/* sets ac av by parsing raw input buf */
@@ -104,3 +144,5 @@ void set_pwd(char *dir_path, char *pwd[], int *depth){
 
 	return;
 }
+
+#endif

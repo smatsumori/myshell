@@ -10,18 +10,33 @@ int main(int argc, char const* argv[])
 	int tkno;
 	int pid, ac, stat, fd;
 //	int tkn[MAXARG];
-	char *av[MAXARG], buf[BUFSIZE];
+	char *av[MAXARG], raw_input[BUFSIZE];
 	// char **cmds[MAXARG];	// {cmd0, cmd1, cmd3}
 	/* echo hogehoge | grep hoge | wc */
 	char *cmd1[] = {"echo", "hogehoge", NULL};
 	char *cmd2[] = {"grep", "hoge", NULL};
 	char *cmd3[] = {"wc", NULL};
 	char **cmds[] = {cmd1, cmd2, cmd3, NULL};
-	int tkn[] = {TKN_COM, TKN_PIPE, TKN_COM, TKN_PIPE, TKN_COM, TKN_EOL};
+	int tknid[MAXARG];
 
 	while (1) {
 		printf("\n$");
-		exec_pipeline((char ***)cmds, 0, STDIN_FILENO);
+//		exec_pipeline((char ***)cmds, 0, STDIN_FILENO);
+		
+		if (fgets(raw_input, sizeof(raw_input), stdin) == NULL) {
+			if (ferror(stdin)) {
+				perror("fgets");
+				exit(1);
+			}
+			printf("\nExiting...\n");
+			exit(0);
+		}
+		// test tokenizer
+		char *tokenseq[MAXARG];
+		tkno = tokenize(raw_input, tokenseq, tknid);
+		for (int i = 0; i < tkno; i++) {
+			printf("[%d: %s]\n", tknid[i], tokenseq[i]);
+		}
 	}
 	return 0;
 }
@@ -64,7 +79,6 @@ int main(int argc, char const* argv[])
 			exit(0);
 		}
 		buf[strlen(buf) - 1] = '\0'; // safe sentinel
-		memset(av, 0, sizeof av);
 		redi = 0;	// initialize
 		
 		/* PARSING */
@@ -124,32 +138,6 @@ int main(int argc, char const* argv[])
 			}
 		}
 
-
-		/* PIPELINE */
-		/* pfd[0] for stdin, pfd[1] for stdout */
-		/*
-		if (pipc > 0) {
-			if (pid == 0) {
-				int proc_c = pipc; // number of processes to create
-				close(1);
-				dup(pfd[1]);
-				close(pfd[0]);
-				close(pfd[1]);
-				
-				
-			} else {
-				while (0 <= pipc) {
-					if (waitpid(pid, &stat, 0) < 0) {
-						perror("Error_waitpid");
-						exit(3);
-					}
-					pipc--;
-				}
-				printf("\n");
-				continue;
-			}
-		}
-		*/
 
 		if (pipc > 0) {
 			pipe(pfd);
