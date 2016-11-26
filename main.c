@@ -17,7 +17,7 @@ int main(int argc, char const* argv[])
 	char *cmd2[] = {"grep", "hoge", NULL};
 	char *cmd3[] = {"wc", NULL};
 	char **cmds[] = {cmd1, cmd2, cmd3, NULL};
-	int tknid[MAXARG];
+	int tkid[MAXARG];
 
 	while (1) {
 		printf("\n$");
@@ -32,10 +32,15 @@ int main(int argc, char const* argv[])
 			exit(0);
 		}
 		// test tokenizer
-		char *tokenseq[MAXARG];
-		tkno = tokenize(raw_input, tokenseq, tknid);
+		char *tkseq[MAXARG];
+		int cmdid[MAXARG];
+		tkno = tokenize(raw_input, tkseq, tkid);
 		for (int i = 0; i < tkno; i++) {
-			printf("[%d: %s]\n", tknid[i], tokenseq[i]);
+			printf("[%d: %s]\n", tkid[i], tkseq[i]);
+		}
+		ac = parse(tkseq, tkid, (char ***)cmds, cmdid);
+		for (int i = 0; i < ac - 1; i++) {
+			printf("[%d: %s]\n", cmdid[i], cmds[i][0]);
 		}
 	}
 	return 0;

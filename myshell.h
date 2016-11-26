@@ -18,6 +18,15 @@
 #define TKN_COM_BG 5
 #define TKN_EOL -1
 #define TKN_EOF -2
+#define TKN_SYN_ERROR -3
+
+/* cmd status */
+#define CMD_NORM 11
+#define CMD_REDIR_IN 12
+#define CMD_REDIR_OUT 13
+#define CMD_PIPE 14
+#define CMD_BG 15
+#define CMD_EOC -2
 
 /* error status */
 #define ERR_MALLOC 4
@@ -45,6 +54,7 @@ extern int parser(int *, char *[], char buf[]);
 extern void set_pwd(char *, char *[], int *);
 extern void show_tkno(int);
 extern int tokenize(char *, char **, int *);
+extern int parse(char **, int *, char ***, int *);
 
 /* macros */
 #define Close(FD) do{	\

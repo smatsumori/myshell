@@ -13,15 +13,67 @@ int setcmds(char *tp, char **cmds[MAXARG], int cmdno) {
 }
 #endif
 
-int iscop(char c) {
+size_t iscop(char c) {
 	// todo: add more token later
-	return (isalnum(c) || (c == '.'));
+	return (isalnum(c) || (c == '.') || (c == '-'));
 }
 
-int parse(char **tokenseq, int *token_id, char ***cmds, int cmd_id) {
-	int cmdi = 0;
+size_t isrpt(int tkn) { 
+	// RV: if tkn is redirection or pipe
+	return ((tkn == TKN_REDIR_IN) || (tkn == TKN_REDIR_OUT) 
+			|| (tkn == TKN_PIPE));
+}
 
-	return cmdi;
+int parse(char **tokenseq, int *token_id, char ***cmds, int *cmd_id) {
+	/* returns numbers of commands */
+	int cmdi = 0;
+	int tk;
+	// Check syntax error
+	if (isrpt(token_id[0])) {
+		token_id[0] = TKN_SYN_ERROR;
+		return -1;
+	}
+
+	for (int tki = 0;;) {
+		/* IF: end of command */
+		if (token_id[tki] == TKN_EOL) {
+			cmds[cmdi] = NULL;
+			cmd_id[cmdi] = CMD_EOC;	
+			break;
+		}
+		
+		/* IF: cmd or param */
+		if (token_id[tki] == TKN_COP) {
+			cmd_id[cmdi] = CMD_NORM;
+			cmds[cmdi++] = &tokenseq[tki++];
+			while (token_id[tki] == TKN_COP) tki++;
+			continue;
+		}
+		
+		/* IF: redir or pipe */
+		if (isrpt(token_id[tki])) {
+					tokenseq[tki] = NULL;
+			switch (token_id[tki++]) {
+				case TKN_REDIR_OUT:
+					cmd_id[cmdi - 1] = CMD_REDIR_OUT;
+					break;
+				case TKN_REDIR_IN:
+					cmd_id[cmdi - 1] = CMD_REDIR_IN;
+					break;
+				case TKN_PIPE:
+					cmd_id[cmdi - 1] = CMD_PIPE;
+					break;
+			}
+			// Check syntax error
+			// IF: redir and pipe continues twice in a row
+			if (isrpt(token_id[tki])) {
+				token_id[tki] = TKN_SYN_ERROR;
+				return -1;
+			}
+			continue;
+		}
+	}
+	return cmdi + 1;
 }
 
 int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
