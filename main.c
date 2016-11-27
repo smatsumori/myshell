@@ -21,7 +21,6 @@ int main(int argc, char const* argv[])
 
 	while (1) {
 		printf("\n$");
-//		exec_pipeline((char ***)cmds, 0, STDIN_FILENO);
 		
 		if (fgets(raw_input, sizeof(raw_input), stdin) == NULL) {
 			if (ferror(stdin)) {
@@ -42,6 +41,7 @@ int main(int argc, char const* argv[])
 		for (int i = 0; i < ac - 1; i++) {
 			printf("[%d: %s]\n", cmdid[i], cmds[i][0]);
 		}
+		exec_cmd((char ***)cmds, cmdid, 0, STDIN_FILENO);
 	}
 	return 0;
 }

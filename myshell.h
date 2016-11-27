@@ -29,7 +29,9 @@
 #define CMD_EOC -2
 
 /* error status */
+#define ERR_CODE -1
 #define ERR_MALLOC 4
+#define ERR_WAIT 5
 
 /* includes */
 #include <stdio.h>
@@ -44,9 +46,10 @@
 
 /* prototypes */
 /* cmdexe.c */
-extern void exec_pipeline(char ***, size_t, int);
+extern void exec_pipeline(char ***, int *, size_t, int);
+extern void exec_cmd(char ***, int *, size_t, int);
 extern void redirect(int, int);
-extern void cmd_redirect(int, int, char *);
+extern void cmd_redirect(char *, size_t);
 
 /* parser.c */
 extern int lexer(char buf[]);
@@ -86,5 +89,6 @@ extern int parse(char **, int *, char ***, int *);
 /* functions */
 static void report_error_and_exit(const char* msg, int rpid) {
 	perror(msg);
+	exit(rpid);
 	return;
 }
