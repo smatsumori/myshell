@@ -32,6 +32,8 @@
 #define ERR_CODE -1
 #define ERR_MALLOC 4
 #define ERR_WAIT 5
+#define ERR_FORK 6
+#define ERR_EXECVP 10
 
 /* includes */
 #include <stdio.h>

@@ -1,18 +1,5 @@
 #include "myshell.h"
 
-#ifdef MERGE
-int setcmds(char *tp, char **cmds[MAXARG], int cmdno) {
-	/* RETURN: TOKENSTATUS */
-	/* *tp: ls -al > someghing.txt */
-	int tkno;
-	char *ptr = tp;
-	char **cmdptr;
-	Malloc(cmdptr, char **, MAXARG, ERR_MALLOC);
-	cmds[cmdno] = cmdptr;
-	return tkno;
-}
-#endif
-
 size_t iscop(char c) {
 	// todo: add more token later
 	return (isalnum(c) || (c == '.') || (c == '-'));
@@ -125,8 +112,11 @@ int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
 	return tki + 1;
 }
 
-#ifdef MERGE
 
+
+
+
+#ifdef MERGE
 void tokenizer(char *rawinput, char **cmds[MAXARG], int tkn[MAXARG]) {
 	/* ls -al | grep "something" | more */
 	const char *delim_p = "|";	// Deliminator

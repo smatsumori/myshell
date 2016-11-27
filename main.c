@@ -37,6 +37,7 @@ int main(int argc, char const* argv[])
 			printf("[%d: %s]\n", tkid[i], tkseq[i]);
 		}
 		ac = parse(tkseq, tkid, (char ***)cmds, cmdid);
+		printf("------CMD-------\n");
 		for (int i = 0; i < ac - 1; i++) {
 			printf("[%d: %s]\n", cmdid[i], cmds[i][0]);
 		}
@@ -44,3 +45,4 @@ int main(int argc, char const* argv[])
 	}
 	return 0;
 }
+

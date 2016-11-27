@@ -64,10 +64,41 @@ void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	}
 }
 
+static void exec_norm(char **cmds[], int *cmdid, size_t pos, int in_fd) {
+	int pid, stat;
+	switch ((pid = fork())) {
+	case -1:	// Cannot fork
+		report_error_and_exit("fork", ERR_FORK);
+	case 0:	/* CHILD */
+		#ifdef DEBUG
+			fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
+		#endif
+		/* EXECUTION */
+		if (execvp(cmds[pos][0], cmds[pos]) == -1) report_error_and_exit("execvp", ERR_EXECVP);
+		break;
+	default: /* PARENT */
+		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
+	}
+	return;
+}
+
 void exec_cmd(char **cmds[], int *cmdid, size_t pos, int in_fd) {
-	
+	int id;
 	if (pos == 0) {
-		if (cmdid[pos] == CMD_PIPE) exec_pipeline(cmds, cmdid, pos, in_fd);
+		switch (cmdid[0]) {
+			case CMD_NORM:
+				exec_norm(cmds, cmdid, pos, in_fd);
+				break;
+			case CMD_PIPE:
+				exec_pipeline(cmds, cmdid, pos, in_fd);
+				break;
+			case CMD_REDIR_IN:
+				cmd_redirect(cmds[pos + 1][0], CMD_REDIR_IN);
+				break;
+			case CMD_REDIR_OUT:
+				cmd_redirect(cmds[pos + 1][0], CMD_REDIR_OUT);
+				break;
+		}
 	} else {
 		if (cmdid[pos - 1] == CMD_PIPE) exec_pipeline(cmds, cmdid, pos, in_fd);
 	}
