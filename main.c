@@ -43,5 +43,7 @@ int main(int argc, char const* argv[])
 
 void printinfo(){
 	printf("msh ver %s\n", VER);
-	printf("Executing on [PID: %d][PPID: %d]\n\n", getpid(), getppid());
+	printf("Executing on [PID: %d][PPID: %d][PGID: %d]\n\n",
+		 	getpid(), getppid(), getpgrp());
+	return;
 }

@@ -1,7 +1,7 @@
 /* defines */
 #define DEBUG
 #define DEBUG_LEX
-#define MAXINPUT
+#define MAXINPUT 100
 #define MAXARG 80
 #define BUFSIZE 1024
 #define VER "2.2"
@@ -86,10 +86,16 @@ extern int parse(char **, int *, char ***, int *);
 	} \
 } while (0) \
 
+#define Show_pinfo() do{	\
+	fprintf(stderr, "INFO:[PID: %d][PPID: %d][PRGP: %d]\n",	\
+			getpid(), getppid(), getpgrp());	\
+} while(0)\
 
-/* functions */
+
+/* utils */
 static void report_error_and_exit(const char* msg, int rpid) {
 	perror(msg);
 	exit(rpid);
 	return;
 }
+

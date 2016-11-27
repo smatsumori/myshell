@@ -41,12 +41,13 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	 * pos: position
 	 * ifd: input file descriptor */
 	int stat;
-	int pid;
+	pid_t pid;
 	if (cmdid[pos + 1] == CMD_EOC) {	/* IF: last command */
 		switch ((pid = fork())) {
 			case -1:
 				report_error_and_exit("fork", ERR_FORK);
 			case 0:
+				Show_pinfo();
 				redirect(in_fd, STDIN_FILENO);
 				execvp(cmds[pos][0], cmds[pos]);
 				break;
@@ -64,6 +65,7 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 				report_error_and_exit("fork", ERR_FORK);
 				break;
 			case 0:		/* CHILD */
+				Show_pinfo();
 				Close(pfd[FD_READ]);	// close read
 				redirect(in_fd, STDIN_FILENO);	// STDIN -> in_fd
 				redirect(pfd[FD_WRITE], STDOUT_FILENO);	// STDOUT -> fd[1](write)
@@ -73,7 +75,7 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 				Close(pfd[FD_WRITE]);
 				if(pos != 0) Close(in_fd);	// Prevent closing myshell STDIN
 				if (waitpid(pid, &stat, 0) < 0 ) report_error_and_exit("wait", ERR_WAIT);
-				exec_cmd(cmds, cmdid, pos + 1, pfd[FD_READ]);
+				exec_pipeline(cmds, cmdid, pos + 1, pfd[FD_READ]);
 				break;
 		}
 	}
@@ -85,9 +87,8 @@ static void exec_norm(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	case -1:	// Cannot fork
 		report_error_and_exit("fork", ERR_FORK);
 	case 0:	/* CHILD */
-		#ifdef DEBUG
-			fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
-		#endif
+		setpgid(getpid(), getpid());
+		Show_pinfo();
 		/* EXECUTION */
 		if (execvp(cmds[pos][0], cmds[pos]) == -1) report_error_and_exit("execvp", ERR_EXECVP);
 		break;
@@ -103,9 +104,7 @@ static void exec_redir(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	case -1:	// Cannot fork
 		report_error_and_exit("fork", ERR_FORK);
 	case 0:	/* CHILD */
-		#ifdef DEBUG
-			fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
-		#endif
+		Show_pinfo();
 		cmd_redirect(cmds[pos + 1][0], cmdid[pos]);
 		/* EXECUTION */
 		if (execvp(cmds[pos][0], cmds[pos]) == -1) report_error_and_exit("execvp", ERR_EXECVP);
@@ -119,7 +118,6 @@ static void exec_redir(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 
 void exec_cmd(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	int id;
-	fprintf(stderr, "ppid %d\n", getppid());
 	if (pos == 0) {
 		switch (cmdid[0]) {
 			case CMD_NORM:
