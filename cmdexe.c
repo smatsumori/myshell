@@ -1,6 +1,12 @@
 #include "myshell.h"
 
-void cmd_redirect(char *filename,  size_t mode){
+/* PROTOTYPE */
+static void exec_norm(char ***, int *, size_t, int);
+static void exec_pipeline(char ***, int *, size_t, int);
+static void redirect(int, int);
+static void cmd_redirect(char *, size_t);
+
+static void cmd_redirect(char *filename,  size_t mode){
 	int fd;
 	switch (mode) {
 		case CMD_REDIR_IN:
@@ -21,7 +27,7 @@ void cmd_redirect(char *filename,  size_t mode){
 }
 
 // newfd -> oldfd
-void redirect(int oldfd, int newfd) {
+static void redirect(int oldfd, int newfd) {
 	if (oldfd != newfd) {
 		if (dup2(oldfd, newfd) != -1)
 			Close(oldfd);
@@ -30,7 +36,7 @@ void redirect(int oldfd, int newfd) {
 	}
 }
 
-void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
+static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	/* cmds: commands 
 	 * pos: position
 	 * ifd: input file descriptor */

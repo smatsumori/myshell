@@ -48,10 +48,7 @@
 
 /* prototypes */
 /* cmdexe.c */
-extern void exec_pipeline(char ***, int *, size_t, int);
 extern void exec_cmd(char ***, int *, size_t, int);
-extern void redirect(int, int);
-extern void cmd_redirect(char *, size_t);
 
 /* parser.c */
 extern int lexer(char buf[]);
