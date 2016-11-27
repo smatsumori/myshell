@@ -25,10 +25,7 @@ int main(int argc, char const* argv[])
 		}
 		printf("\n$");
 		if (fgets(buf, sizeof(buf), stdin) == NULL) {
-			if (ferror(stdin)) {
-				perror("fgets");
-				exit(1);
-			}
+			if (ferror(stdin)) report_error_and_exit("fgets", ERR_FGETS);
 			printf("\nExiting...\n");
 			exit(0);
 		}

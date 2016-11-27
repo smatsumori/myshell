@@ -34,6 +34,8 @@
 #define ERR_WAIT 5
 #define ERR_FORK 6
 #define ERR_EXECVP 10
+#define ERR_FGETS 11
+#define ERR_PIPE 7
 
 /* includes */
 #include <stdio.h>

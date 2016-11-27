@@ -43,16 +43,25 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	int stat;
 	int pid;
 	if (cmdid[pos + 1] == CMD_EOC) {	/* IF: last command */
-		redirect(in_fd, STDIN_FILENO);
-		execvp(cmds[pos][0], cmds[pos]);
+		switch ((pid = fork())) {
+			case -1:
+				report_error_and_exit("fork", ERR_FORK);
+			case 0:
+				redirect(in_fd, STDIN_FILENO);
+				execvp(cmds[pos][0], cmds[pos]);
+				break;
+			default:
+				Close(in_fd);
+				if (waitpid(pid, &stat, 0) < 0 ) report_error_and_exit("wait", ERR_WAIT);
+		}
 		return;
 	} else {
 		// set pfd in current process
 		int pfd[2];	// i0: read, i1: write
-		if (pipe(pfd) == -1) perror("ERROR: pipe");
+		if (pipe(pfd) == -1) report_error_and_exit("pipe", ERR_PIPE);
 		switch ((pid = fork())) {
 			case -1:
-				perror("ERROR: fork");
+				report_error_and_exit("fork", ERR_FORK);
 				break;
 			case 0:		/* CHILD */
 				Close(pfd[FD_READ]);	// close read
@@ -62,9 +71,9 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 				break;
 			default:	/* PARENT */
 				Close(pfd[FD_WRITE]);
-				Close(in_fd);
+				if(pos != 0) Close(in_fd);	// Prevent closing myshell STDIN
 				if (waitpid(pid, &stat, 0) < 0 ) report_error_and_exit("wait", ERR_WAIT);
-				exec_pipeline(cmds, cmdid, pos + 1, pfd[FD_READ]);
+				exec_cmd(cmds, cmdid, pos + 1, pfd[FD_READ]);
 				break;
 		}
 	}
@@ -88,8 +97,29 @@ static void exec_norm(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	return;
 }
 
+static void exec_redir(char **cmds[], int *cmdid, size_t pos, int in_fd) {
+	int pid, stat;
+	switch ((pid = fork())) {
+	case -1:	// Cannot fork
+		report_error_and_exit("fork", ERR_FORK);
+	case 0:	/* CHILD */
+		#ifdef DEBUG
+			fprintf(stderr, "Executing CHIDLD PID: %d\n", getpid());
+		#endif
+		cmd_redirect(cmds[pos + 1][0], cmdid[pos]);
+		/* EXECUTION */
+		if (execvp(cmds[pos][0], cmds[pos]) == -1) report_error_and_exit("execvp", ERR_EXECVP);
+		break;
+	default: /* PARENT */
+		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
+	}
+	return;
+}
+
+
 void exec_cmd(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	int id;
+	fprintf(stderr, "ppid %d\n", getppid());
 	if (pos == 0) {
 		switch (cmdid[0]) {
 			case CMD_NORM:
@@ -99,10 +129,10 @@ void exec_cmd(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 				exec_pipeline(cmds, cmdid, pos, in_fd);
 				break;
 			case CMD_REDIR_IN:
-				cmd_redirect(cmds[pos + 1][0], CMD_REDIR_IN);
+				exec_redir(cmds, cmdid, pos, in_fd);
 				break;
 			case CMD_REDIR_OUT:
-				cmd_redirect(cmds[pos + 1][0], CMD_REDIR_OUT);
+				exec_redir(cmds, cmdid, pos, in_fd);
 				break;
 		}
 	} else {
