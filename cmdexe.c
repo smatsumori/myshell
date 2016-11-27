@@ -5,6 +5,32 @@ static void exec_norm(char ***, int *, size_t, int);
 static void exec_pipeline(char ***, int *, size_t, int);
 static void redirect(int, int);
 static void cmd_redirect(char *, size_t);
+static void execvew(const char *, char *const []);
+
+static void execvew(const char *file, char *const argv[]) {
+	/* wrapper function for execve */
+	char *envpath =  getenv("PATH");
+	char *tp = envpath;
+	char *path;
+	Malloc(path, char , sizeof(envpath) + sizeof(argv[0]), ERR_MALLOC);
+	if ((tp = strtok(envpath, ":")) == NULL) {
+		strcpy(path, tp);
+		strcat(path, "/");
+		strcat(path, argv[0]);
+		if (execve(path, argv, environ) < 0) report_error_and_exit("execvew", ERR_EXECVEW);
+	} else {
+		while ((tp = strtok(NULL, ":")) != NULL) {
+			strcpy(path, tp);
+			strcat(path, "/");
+			strcat(path, argv[0]);
+			fprintf(stderr, "%s\n",path);
+			if (execve(path, argv, environ) < 0) continue;
+			return;
+		}
+		report_error_and_exit("execvew", ERR_EXECVEW);
+	}
+	return;
+}
 
 static void cmd_redirect(char *filename,  size_t mode){
 	int fd;
@@ -87,12 +113,13 @@ static void exec_norm(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	case -1:	// Cannot fork
 		report_error_and_exit("fork", ERR_FORK);
 	case 0:	/* CHILD */
-		setpgid(getpid(), getpid());
+		Default_INT();
 		Show_pinfo();
 		/* EXECUTION */
-		if (execvp(cmds[pos][0], cmds[pos]) == -1) report_error_and_exit("execvp", ERR_EXECVP);
+		execvew(cmds[pos][0], cmds[pos]);
 		break;
 	default: /* PARENT */
+		Ignore_INT();
 		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
 	}
 	return;

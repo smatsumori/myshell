@@ -2,7 +2,8 @@
 
 size_t iscop(char c) {
 	// todo: add more token later
-	return (isalnum(c) || (c == '.') || (c == '-'));
+	return (isalnum(c) || (c == '.') || (c == '-') ||
+			(c == '/') || (c == '[') || (c == ']'));
 }
 
 size_t isrpt(int tkn) { 

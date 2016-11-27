@@ -30,13 +30,15 @@
 
 /* error status */
 #define ERR_CODE -1
+#define ERR_EXECVEW 2
+#define ERR_CHDIR 3
 #define ERR_MALLOC 4
 #define ERR_WAIT 5
 #define ERR_FORK 6
+#define ERR_PIPE 7
+#define ERR_SIG 8
 #define ERR_EXECVP 10
 #define ERR_FGETS 11
-#define ERR_PIPE 7
-
 /* includes */
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +49,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <ctype.h>
+
+/* Global */
+extern char **environ;	// envp
 
 /* prototypes */
 /* cmdexe.c */
@@ -81,7 +86,7 @@ extern int parse(char **, int *, char ***, int *);
 #define Malloc(PTR, TYPE, SIZE, ERRORNO) do{	\
 	if ((PTR = (TYPE *) malloc(sizeof(TYPE) * SIZE)) == NULL) {	\
 		fprintf(stderr, "Cannot allocate %d byte memory space.\n", \
-				sizeof(TYPE) * (SIZE)); \
+				(int)sizeof(TYPE) * (int)(SIZE)); \
 		exit(ERRORNO); \
 	} \
 } while (0) \
@@ -91,6 +96,13 @@ extern int parse(char **, int *, char ***, int *);
 			getpid(), getppid(), getpgrp());	\
 } while(0)\
 
+#define Ignore_INT() do{	\
+	if (signal(SIGINT, SIG_IGN) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
+} while(0) \
+
+#define Default_INT() do{	\
+	if (signal(SIGINT, SIG_DFL) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
+} while(0) \
 
 /* utils */
 static void report_error_and_exit(const char* msg, int rpid) {
