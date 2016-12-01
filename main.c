@@ -3,7 +3,9 @@
  */
 #include "myshell.h"
 
+int chdirw(char *);
 void printinfo();
+pid_t S_ppid;
 
 int main(int argc, char const* argv[])
 {
@@ -15,12 +17,14 @@ int main(int argc, char const* argv[])
 	int cmdid[MAXARG];
 	const char *user = getenv("USER");
 	const char *homepath = getenv("HOME");
+	char pwd[PATH_MAX];
 
-	
+	S_ppid = getppid();
 	printinfo();	
 
 	while (1) {
-		printf("%s @ msh ~ ", user);
+		strcpy(pwd, getenv("PWD"));
+		printf("%s @ msh ~ %s\n$ ", user, pwd);
 		if (fgets(raw_input, sizeof(raw_input), stdin) == NULL) {
 			if (ferror(stdin)) report_error_and_exit("fgets", ERR_FGETS);
 			printf("\nExiting...\n");
@@ -29,6 +33,10 @@ int main(int argc, char const* argv[])
 		tkno = tokenize(raw_input, tkseq, tkid);
 		for (int i = 0; i < tkno; i++) {
 			printf("[%d: %s]", tkid[i], tkseq[i]);
+		}
+		if (tkid[0] == TKN_EOL) {
+			printf("\n");
+			continue;
 		}
 		ac = parse(tkseq, tkid, (char ***)cmds, cmdid);
 		printf("\n------CMD-------\n");
@@ -40,15 +48,13 @@ int main(int argc, char const* argv[])
 		/* CHANGE DIR */
 		if (strcmp(cmds[0][0], "cd") == 0) {
 			if (cmds[0][1] == NULL) {
-				chdir(homepath);
+				chdirw((char *)homepath);
 			} else {
-				if(chdir(cmds[0][1]) == -1) report_error_and_exit("chdir", ERR_CHDIR);
-			}
-			printf("\n");
+				if(chdirw(cmds[0][1]) == -1) report_error_and_exit("chdir", ERR_CHDIR);
 			continue;
 		} else if (strcmp(cmds[0][0], "exit") == 0) {
 			fprintf(stderr, "Exitting...\n");
-			exit(0);
+			exit(EXIT_SUCCESS);
 		}
 
 		/* EXECUTION */
@@ -56,7 +62,7 @@ int main(int argc, char const* argv[])
 		Default_INT();
 		printf("\n");
 	}
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void printinfo(){
@@ -64,4 +70,12 @@ void printinfo(){
 	printf("Executing on [PID: %d][PPID: %d][PGID: %d]\n\n",
 		 	getpid(), getppid(), getpgrp());
 	return;
+}
+
+int chdirw(char *dir) {
+	char pwd[PATH_MAX];
+	int stat = chdir(dir);
+	char *newPWD = getcwd(pwd, sizeof(pwd));
+	setenv("PWD", newPWD, 1);
+	return stat;
 }

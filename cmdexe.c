@@ -1,11 +1,22 @@
 #include "myshell.h"
 
 /* PROTOTYPE */
+static void sig_handler(int);
 static void exec_norm(char ***, int *, size_t, int);
+static void exec_bg(char ***, int *, size_t, int);
 static void exec_pipeline(char ***, int *, size_t, int);
 static void redirect(int, int);
 static void cmd_redirect(char *, size_t);
 static void execvew(const char *, char *const []);
+
+
+static void sig_handler(int signo) {
+	fprintf(stderr, "handler called\n");
+	int status;
+	waitpid(-1, &status, WNOHANG);
+	signal(SIGCHLD, SIG_DFL);
+	return;
+}
 
 static void execvew(const char *file, char *const argv[]) {
 	/* wrapper function for execve */
@@ -23,7 +34,7 @@ static void execvew(const char *file, char *const argv[]) {
 			strcpy(path, tp);
 			strcat(path, "/");
 			strcat(path, argv[0]);
-			fprintf(stderr, "%s\n",path);
+			printf("%s\n", path);
 			if (execve(path, argv, environ) < 0) continue;
 			return;
 		}
@@ -75,7 +86,7 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 			case 0:
 				Show_pinfo();
 				redirect(in_fd, STDIN_FILENO);
-				execvp(cmds[pos][0], cmds[pos]);
+				execvew(cmds[pos][0], cmds[pos]);
 				break;
 			default:
 				Close(in_fd);
@@ -91,11 +102,12 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 				report_error_and_exit("fork", ERR_FORK);
 				break;
 			case 0:		/* CHILD */
+				setpgid(getpid(), getpid());
 				Show_pinfo();
 				Close(pfd[FD_READ]);	// close read
 				redirect(in_fd, STDIN_FILENO);	// STDIN -> in_fd
 				redirect(pfd[FD_WRITE], STDOUT_FILENO);	// STDOUT -> fd[1](write)
-				execvp(cmds[pos][0], cmds[pos]);
+				execvew(cmds[pos][0], cmds[pos]);
 				break;
 			default:	/* PARENT */
 				Close(pfd[FD_WRITE]);
@@ -113,14 +125,35 @@ static void exec_norm(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	case -1:	// Cannot fork
 		report_error_and_exit("fork", ERR_FORK);
 	case 0:	/* CHILD */
-		Default_INT();
+		setpgid(getpid(), getpid());
+		Set_child_SIG();
 		Show_pinfo();
-		/* EXECUTION */
+		execvp(cmds[pos][0], cmds[pos]);
+		break;
+	default: /* PARENT */
+		Set_parent_SIG();
+		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
+	}
+	return;
+}
+
+static void exec_bg(char **cmds[], int *cmdid, size_t pos, int in_fd) {
+	int pid, stat;
+	switch ((pid = fork())) {
+	case -1:	// Cannot fork
+		report_error_and_exit("fork", ERR_FORK);
+	case 0:
+		setpgid(getpid(), getpid());
+		int fd = open("/dev/tty", O_RDWR);
+		tcsetpgrp(fd, S_ppid);
+		Set_child_SIG();
+		Show_pinfo();
 		execvew(cmds[pos][0], cmds[pos]);
 		break;
 	default: /* PARENT */
-		Ignore_INT();
-		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
+		Set_parent_SIG();
+		fprintf(stderr, "Executing on BG\n");
+		signal(SIGCHLD, sig_handler);
 	}
 	return;
 }
@@ -131,12 +164,15 @@ static void exec_redir(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	case -1:	// Cannot fork
 		report_error_and_exit("fork", ERR_FORK);
 	case 0:	/* CHILD */
+		setpgid(getpid(), getpid());
+		Set_child_SIG();
 		Show_pinfo();
 		cmd_redirect(cmds[pos + 1][0], cmdid[pos]);
 		/* EXECUTION */
-		if (execvp(cmds[pos][0], cmds[pos]) == -1) report_error_and_exit("execvp", ERR_EXECVP);
+		execvew(cmds[pos][0], cmds[pos]);
 		break;
 	default: /* PARENT */
+		Set_parent_SIG();
 		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
 	}
 	return;
@@ -144,9 +180,13 @@ static void exec_redir(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 
 
 void exec_cmd(char **cmds[], int *cmdid, size_t pos, int in_fd) {
+	// Error check
 	int id;
 	if (pos == 0) {
 		switch (cmdid[0]) {
+			case CMD_BG:
+				exec_bg(cmds, cmdid, pos, in_fd);
+				break;
 			case CMD_NORM:
 				exec_norm(cmds, cmdid, pos, in_fd);
 				break;

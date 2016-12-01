@@ -1,10 +1,14 @@
+#ifndef MYSHELL_H
+#define MYSHELL_H
+
 /* defines */
 #define DEBUG
 #define DEBUG_LEX
 #define MAXINPUT 100
 #define MAXARG 80
 #define BUFSIZE 1024
-#define VER "2.2"
+#define VER "4.1"
+#define PATH_MAX 100
 
 /* FD status */
 #define FD_READ 0
@@ -39,7 +43,9 @@
 #define ERR_SIG 8
 #define ERR_EXECVP 10
 #define ERR_FGETS 11
+
 /* includes */
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,6 +58,7 @@
 
 /* Global */
 extern char **environ;	// envp
+extern pid_t S_ppid;
 
 /* prototypes */
 /* cmdexe.c */
@@ -104,6 +111,16 @@ extern int parse(char **, int *, char ***, int *);
 	if (signal(SIGINT, SIG_DFL) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
 } while(0) \
 
+#define Set_child_SIG() do{	\
+	if (signal(SIGINT, SIG_DFL) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
+	if (signal(SIGTSTP, SIG_DFL) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
+} while(0) \
+
+#define Set_parent_SIG() do{	\
+	if (signal(SIGINT, SIG_IGN) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
+	if (signal(SIGTSTP, SIG_IGN) == SIG_ERR) report_error_and_exit("signal", ERR_SIG); \
+} while(0) \
+
 /* utils */
 static void report_error_and_exit(const char* msg, int rpid) {
 	perror(msg);
@@ -111,3 +128,4 @@ static void report_error_and_exit(const char* msg, int rpid) {
 	return;
 }
 
+#endif
