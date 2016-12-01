@@ -3,21 +3,25 @@
 size_t iscop(char c) {
 	// todo: add more token later
 	return (isalnum(c) || (c == '.') || (c == '-') ||
-			(c == '/') || (c == '[') || (c == ']'));
+			(c == '/') || (c == '[') || (c == ']') ||
+			(c == '=') || (c == '+') || (c == '_') ||
+			(c == '/') || (c == ':'));
 }
 
-size_t isrpt(int tkn) { 
+size_t isrpbt(int tkn) { 
 	// RV: if tkn is redirection or pipe
 	return ((tkn == TKN_REDIR_IN) || (tkn == TKN_REDIR_OUT) 
-			|| (tkn == TKN_PIPE));
+			|| (tkn == TKN_PIPE) || (tkn == TKN_COM_BG));
 }
 
 int parse(char **tokenseq, int *token_id, char ***cmds, int *cmd_id) {
 	/* returns numbers of commands */
+	// ls | more > something &
 	int cmdi = 0;
 	int tk;
 	// Check syntax error
-	if (isrpt(token_id[0])) {
+
+	if (isrpbt(token_id[0])) {
 		token_id[0] = TKN_SYN_ERROR;
 		return -1;
 	}
@@ -39,9 +43,14 @@ int parse(char **tokenseq, int *token_id, char ***cmds, int *cmd_id) {
 		}
 		
 		/* IF: redir or pipe */
-		if (isrpt(token_id[tki])) {
+		if (isrpbt(token_id[tki])) {
 					tokenseq[tki] = NULL;
 			switch (token_id[tki++]) {
+				// think of ls | more > something &
+				// com pipe com redir com bg
+				case TKN_COM_BG:
+					cmd_id[cmdi - 1] = CMD_BG;
+					break;
 				case TKN_REDIR_OUT:
 					cmd_id[cmdi - 1] = CMD_REDIR_OUT;
 					break;
@@ -54,7 +63,7 @@ int parse(char **tokenseq, int *token_id, char ***cmds, int *cmd_id) {
 			}
 			// Check syntax error
 			// IF: redir and pipe continues twice in a row
-			if (isrpt(token_id[tki])) {
+			if (isrpbt(token_id[tki])) {
 				token_id[tki] = TKN_SYN_ERROR;
 				return -1;
 			}
@@ -83,8 +92,14 @@ int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
 			continue;
 		}
 		switch (*sp) {
+			case '&':
+					*sp = '\0';
+					tokenseq[tki] = "&";
+					token_id[tki] = TKN_COM_BG;
+					tki++;
+					sp++;
+					continue;
 			case '>':
-					fprintf(stderr, "redirec\n");
 					*sp = '\0';
 					tokenseq[tki] = ">";
 					token_id[tki] = TKN_REDIR_OUT;
@@ -113,85 +128,3 @@ int tokenize(char *rawinput, char **tokenseq, int token_id[MAXARG]) {
 	return tki + 1;
 }
 
-
-
-
-
-#ifdef MERGE
-void tokenizer(char *rawinput, char **cmds[MAXARG], int tkn[MAXARG]) {
-	/* ls -al | grep "something" | more */
-	const char *delim_p = "|";	// Deliminator
-	char *ptr = rawinput;
-	int cmdno = 0;
-
-	if ((tp = strtok(buf, delim_p)) == NULL) {
-		tkn[0] = setcmds(tp, (char ***)cmds);
-		return 1;
-	}
-	tkn[0] = setcmds(tp, (char ***)cmds);
-	while ((tp = strtok(NULL, delim)) != NULL) {
-		tkn[cmno] = setcmds(tp, (char ***)cmds, cmdno);
-	}
-	return 0;
-}
-
-int parser(int *ac, char *av[MAXARG], char buf[BUFSIZE]) {
-	/* sets ac av by parsing raw input buf */
-	*ac = 0;	// Initialize conter to Zero
-	char *tp;
-	if ((tp = strtok(buf, delim)) == NULL) {
-		return 1;
-	}
-	av[(*ac)++] = tp;
-	while ((tp = strtok(NULL, delim)) != NULL) {
-		av[(*ac)++] = tp;
-	}
-	return 0;
-}
-
-void set_pwd(char *dir_path, char *pwd[], int *depth){
-	/* sets pwd to *pwd */	
-	/* dir_path: directory path -- av[1] */
-	/* pwd[]: holds pwd */
-	/* depth: how deep from your inital pwd */
-	char *tp;	// pt: prev
-	char c;
-	// if absolute path
-	if (dir_path[0] == '/') {
-		#ifdef DEBUG_SET_PWD
-			fprintf(stderr, "absolute path mode\n");
-		#endif
-		*depth = -1;
-	} else {
-		#ifdef DEBUG_SET_PWD
-			fprintf(stderr, "relative path mode\n");
-		#endif
-	}
-
-	tp = strtok(dir_path, "/");
-	do {
-		#ifdef DEBUG_SET_PWD
-		printf("Depth: %d\n", *depth);
-		printf("tp %s\n", tp);
-		#endif
-
-		if (*tp == '.') {
-			char *tmp = tp;
-			while (*(tmp++) != '\0') {
-				if (*tmp == '.') {
-					(*depth)--;
-					break;
-				} else {
-					/* Case .sth.swp */
-					pwd[++(*depth)] = tp;
-				}
-			}
-			continue;
-		}
-		pwd[++(*depth)] = tp;
-	} while ((tp = strtok(NULL, "/")) != NULL);
-
-	return;
-}
-
-#endif
