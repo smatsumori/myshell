@@ -52,6 +52,7 @@ int main(int argc, char const* argv[])
 			} else {
 				if(chdirw(cmds[0][1]) == -1) report_error_and_exit("chdir", ERR_CHDIR);
 			continue;
+			}
 		} else if (strcmp(cmds[0][0], "exit") == 0) {
 			fprintf(stderr, "Exitting...\n");
 			exit(EXIT_SUCCESS);
