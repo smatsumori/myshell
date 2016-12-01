@@ -3,6 +3,7 @@
  */
 #include "myshell.h"
 
+void report_syntax_error(int tkno, char *tkseq[], int *token_id);
 int chdirw(char *);
 void printinfo();
 pid_t S_ppid;
@@ -39,6 +40,12 @@ int main(int argc, char const* argv[])
 			continue;
 		}
 		ac = parse(tkseq, tkid, (char ***)cmds, cmdid);
+		if (ac < 0) {
+			report_syntax_error(tkno, tkseq, tkid);
+			printf("\n");
+			continue;
+		}
+		
 		printf("\n------CMD-------\n");
 		for (int i = 0; i < ac - 1; i++) {
 			printf("[%d: %s]", cmdid[i], cmds[i][0]);
@@ -79,4 +86,17 @@ int chdirw(char *dir) {
 	char *newPWD = getcwd(pwd, sizeof(pwd));
 	setenv("PWD", newPWD, 1);
 	return stat;
+}
+
+void report_syntax_error(int tkno, char *tkseq[], int *token_id) {
+	fprintf(stderr, "SYNTAX_ERROR:");
+	for (int i = 0; i < tkno - 1; i++) {
+		if (token_id[i] == TKN_SYN_ERROR) {
+			fprintf(stderr, " [error: %s] ", tkseq[i]);
+			continue;
+		}
+		fprintf(stderr, " %s ", tkseq[i]);
+	}
+	fprintf(stderr, "\n");
+	return;
 }
