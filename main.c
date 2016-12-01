@@ -27,9 +27,10 @@ int main(int argc, char const* argv[])
 		strcpy(pwd, getenv("PWD"));
 		printf("%s @ msh ~ %s\n$ ", user, pwd);
 		if (fgets(raw_input, sizeof(raw_input), stdin) == NULL) {
-			if (ferror(stdin)) report_error_and_exit("fgets", ERR_FGETS);
+			if (ferror(stdin)) continue;
+				//report_error_and_exit("fgets", ERR_FGETS);
 			printf("\nExiting...\n");
-			exit(0);
+			exit(EXIT_SUCCESS);
 		}
 		tkno = tokenize(raw_input, tkseq, tkid);
 		for (int i = 0; i < tkno; i++) {
@@ -42,7 +43,7 @@ int main(int argc, char const* argv[])
 		ac = parse(tkseq, tkid, (char ***)cmds, cmdid);
 		if (ac < 0) {
 			report_syntax_error(tkno, tkseq, tkid);
-			printf("\n");
+			printf("\n\n");
 			continue;
 		}
 		
@@ -67,7 +68,7 @@ int main(int argc, char const* argv[])
 
 		/* EXECUTION */
 		exec_cmd((char ***)cmds, cmdid, 0, STDIN_FILENO);
-		Default_INT();
+//		Default_INT();
 		printf("\n");
 	}
 	return EXIT_SUCCESS;

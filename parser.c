@@ -48,8 +48,13 @@ int parse(char **tokenseq, int *token_id, char ***cmds, int *cmd_id) {
 			switch (token_id[tki++]) {
 				// think of ls | more > something &
 				// com pipe com redir com bg
+				// todo: handle both redirection and background
 				case TKN_COM_BG:
 					cmd_id[cmdi - 1] = CMD_BG;
+					for (int i = cmdi - 2; 0 <= i; i--) {
+						if (cmd_id[i] == CMD_PIPE) break;
+						cmd_id[i] = CMD_BG;
+					}
 					break;
 				case TKN_REDIR_OUT:
 					cmd_id[cmdi - 1] = CMD_REDIR_OUT;

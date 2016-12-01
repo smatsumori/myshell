@@ -11,15 +11,18 @@ static void execvew(const char *, char *const []);
 
 
 static void sig_handler(int signo) {
-	fprintf(stderr, "handler called\n");
+	fprintf(stderr, "Background process has executed: %d\n\n", signo);
 	int status;
 	waitpid(-1, &status, WNOHANG);
 	signal(SIGCHLD, SIG_DFL);
+	signal(SIGTSTP, SIG_DFL);
+	signal(SIGINT, SIG_DFL);
 	return;
 }
 
 static void execvew(const char *file, char *const argv[]) {
 	/* wrapper function for execve */
+	fprintf(stderr, "Searching: %s\n", argv[0]);
 	char *envpath =  getenv("PATH");
 	char *tp = envpath;
 	char *path;
@@ -91,6 +94,7 @@ static void exec_pipeline(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 			default:
 				Close(in_fd);
 				if (waitpid(pid, &stat, 0) < 0 ) report_error_and_exit("wait", ERR_WAIT);
+				Default_INT();
 		}
 		return;
 	} else {
@@ -125,35 +129,38 @@ static void exec_norm(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	case -1:	// Cannot fork
 		report_error_and_exit("fork", ERR_FORK);
 	case 0:	/* CHILD */
-		setpgid(getpid(), getpid());
-		Set_child_SIG();
-		Show_pinfo();
-		execvp(cmds[pos][0], cmds[pos]);
-		break;
-	default: /* PARENT */
-		Set_parent_SIG();
-		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
-	}
-	return;
-}
-
-static void exec_bg(char **cmds[], int *cmdid, size_t pos, int in_fd) {
-	int pid, stat;
-	switch ((pid = fork())) {
-	case -1:	// Cannot fork
-		report_error_and_exit("fork", ERR_FORK);
-	case 0:
-		setpgid(getpid(), getpid());
-		int fd = open("/dev/tty", O_RDWR);
-		tcsetpgrp(fd, S_ppid);
+		//setpgid(getpid(), getpid());
 		Set_child_SIG();
 		Show_pinfo();
 		execvew(cmds[pos][0], cmds[pos]);
 		break;
 	default: /* PARENT */
 		Set_parent_SIG();
-		fprintf(stderr, "Executing on BG\n");
+		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
+		Default_INT();
+	}
+	return;
+}
+
+static void exec_bg(char **cmds[], int *cmdid, size_t pos, int in_fd) {
+	int pid, stat, fd;
+	switch ((pid = fork())) {
+	case -1:	// Cannot fork
+		report_error_and_exit("fork", ERR_FORK);
+	case	0:
+		Show_pinfo();
+		setpgid(getpid(), getpid());
+		//fd 	= open("/dev/tty", O_RDWR);
+		//tcsetpgrp(fd, S_ppid); removed
+		Set_child_SIG();
+		execvew(cmds[pos][0], cmds[pos]);
+		break;
+	default: /* PARENT */
+		Set_parent_SIG();
 		signal(SIGCHLD, sig_handler);
+		fprintf(stderr, "Executing on BG\n");
+		// ignore sigint
+		break;
 	}
 	return;
 }
@@ -174,6 +181,7 @@ static void exec_redir(char **cmds[], int *cmdid, size_t pos, int in_fd) {
 	default: /* PARENT */
 		Set_parent_SIG();
 		if (waitpid(pid, &stat, 0) < 0) report_error_and_exit("wait", ERR_WAIT);
+		Default_INT();
 	}
 	return;
 }

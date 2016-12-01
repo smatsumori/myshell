@@ -7,7 +7,7 @@
 #define MAXINPUT 100
 #define MAXARG 80
 #define BUFSIZE 1024
-#define VER "4.1"
+#define VER "4.2"
 #define PATH_MAX 100
 
 /* FD status */
@@ -99,7 +99,7 @@ extern int parse(char **, int *, char ***, int *);
 } while (0) \
 
 #define Show_pinfo() do{	\
-	fprintf(stderr, "INFO:[PID: %d][PPID: %d][PRGP: %d]\n",	\
+	fprintf(stderr, "\nINFO:[PID: %d][PPID: %d][PRGP: %d]\n",	\
 			getpid(), getppid(), getpgrp());	\
 } while(0)\
 
